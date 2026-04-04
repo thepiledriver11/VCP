@@ -165,3 +165,66 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+def debug_mode():
+    """
+    Print detailed per-trade diagnostics to identify what's going wrong.
+    Run with: python run_real_backtest.py --debug
+    """
+    import sys
+    sys.path.insert(0, os.path.dirname(__file__))
+    from real_data import download_ticker
+    from signals import trend_template_score, detect_vcp_signal, compute_rs
+
+    tickers = ["NVDA", "META", "CRWD", "AAPL", "MSFT"]
+    start, end = "2020-01-01", "2024-12-31"
+
+    print("\n=== DIAGNOSTIC: VCP Detection on Real Stocks ===\n")
+    for ticker in tickers:
+        df = download_ticker(ticker, start, end)
+        if df is None:
+            print(f"{ticker}: NO DATA"); continue
+
+        close = df["Close"]
+        # Scan every 30 days after warmup
+        hits = []
+        for i in range(260, len(df), 30):
+            slice_df = df.iloc[:i]
+            tt = trend_template_score(slice_df["Close"])
+            sig = detect_vcp_signal(slice_df)
+            if sig["passes"]:
+                date = str(df.index[i].date())
+                price = float(close.iloc[i])
+                pivot = sig["pivot"]
+                pct_from_pivot = (pivot - price) / pivot * 100
+                hits.append(f"  {date} price={price:.2f} pivot={pivot:.2f} "
+                            f"({pct_from_pivot:+.1f}% from pivot) "
+                            f"depth={sig['depth']:.1f}% q={sig['quality']:.0f} TT={tt}")
+
+        print(f"{ticker}: {len(hits)} VCP signals detected")
+        for h in hits[-3:]:  # show last 3
+            print(h)
+
+        # What actually happened to price after pivot
+        if hits:
+            # Check the last detected pivot
+            last_slice_i = 260 + ((len(df) - 260) // 30) * 30
+            last_df = df.iloc[:last_slice_i]
+            sig = detect_vcp_signal(last_df)
+            if sig["passes"] and sig["pivot"]:
+                pivot = sig["pivot"]
+                # Find where price was at pivot level
+                subsequent = df["Close"].iloc[last_slice_i:]
+                if len(subsequent) > 20:
+                    gain_10d = (subsequent.iloc[min(10, len(subsequent)-1)] - pivot) / pivot * 100
+                    gain_20d = (subsequent.iloc[min(20, len(subsequent)-1)] - pivot) / pivot * 100
+                    print(f"  → 10d after last pivot: {gain_10d:+.1f}%  20d: {gain_20d:+.1f}%")
+        print()
+
+
+if __name__ == "__main__":
+    if "--debug" in sys.argv:
+        debug_mode()
+    else:
+        main()
