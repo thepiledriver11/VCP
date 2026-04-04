@@ -175,8 +175,11 @@ def detect_vcp(
         return result
 
     # ── Check: base duration ──────────────────────────────────────
-    base_start = pd.Timestamp(contractions[0].high_date)
-    base_weeks = (dates[-1] - base_start).days / 7
+    base_start = pd.Timestamp(contractions[0].high_date).tz_localize(None)
+    last_date = dates[-1]
+    if hasattr(last_date, "tzinfo") and last_date.tzinfo is not None:
+        last_date = last_date.tz_localize(None)
+    base_weeks = (last_date - base_start).days / 7
     result.base_start_date = contractions[0].high_date
     result.base_weeks = round(base_weeks, 1)
 
