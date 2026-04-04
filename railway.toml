@@ -2,5 +2,5 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = ". /opt/venv/bin/activate && python run_real_backtest.py --market BOTH --start 2020-01-01 --end 2024-12-31 --equity 40000"
+startCommand = ". /opt/venv/bin/activate && python run_real_backtest.py --debug"
 restartPolicyType = "NEVER"
