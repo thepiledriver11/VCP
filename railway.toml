@@ -2,6 +2,5 @@
 builder = "NIXPACKS"
 
 [deploy]
-startCommand = "python main.py"
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
+startCommand = ". /opt/venv/bin/activate && python run_real_backtest.py --market BOTH --start 2020-01-01 --end 2024-12-31 --equity 40000"
+restartPolicyType = "NEVER"
