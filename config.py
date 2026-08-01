@@ -51,7 +51,7 @@ class Config:
         default_factory=lambda: os.getenv("IG_ACCOUNT_ID")
     )
     IG_DEMO: bool = field(
-        default_factory=lambda: os.getenv("IG_DEMO", "true").lower() == "true"
+        default_factory=lambda: os.getenv("IG_DEMO", "false").lower() == "true"
     )
 
     # ── Notifications ────────────────────────────────────────────
