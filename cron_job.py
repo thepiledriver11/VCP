@@ -201,19 +201,22 @@ def sync_to_ig(tickers: list[str]) -> dict:
                 failed += 1
                 continue
 
-            # Pick best match
+            # Pick best match — don't filter on epic string format (varies by IG region)
             epic = None
-            is_asx = ticker.endswith(".AX")
             for m in markets:
-                m_epic = m.get("epic", "")
                 m_name = m.get("instrumentName", "").upper()
-                if search_term.upper() in m_name:
-                    if is_asx and any(x in m_epic for x in ("ASX", "AUS", ".AU.")):
-                        epic = m_epic; break
-                    elif not is_asx and any(x in m_epic for x in ("US.", "NASDAQ", "NYSE", "-US")):
-                        epic = m_epic; break
+                m_type = m.get("instrumentType", "")
+                if search_term.upper() in m_name and m_type == "SHARES":
+                    epic = m.get("epic"); break
             if not epic:
+                # Fallback: first SHARES instrument
+                for m in markets:
+                    if m.get("instrumentType") == "SHARES":
+                        epic = m.get("epic"); break
+            if not epic:
+                # Last resort: first result
                 epic = markets[0].get("epic")
+            log.info(f"  → {ticker} matched: {markets[0].get('instrumentName','')} epic={epic}")
 
             # Add to watchlist
             add = session.put(
